@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OT投稿">
+  <meta name="theme-color" content="#c9a84c">
+  <title>ぼっちOT X投稿ジェネレーター</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== Variables ===== */
+    :root {
+      --bg-primary:    #0f0f14;
+      --bg-secondary:  #1a1a24;
+      --bg-card:       #13131c;
+      --bg-card-inner: #0f0f18;
+      --accent:        #c9a84c;
+      --accent-dim:    rgba(201,168,76,.15);
+      --accent-hover:  #e0c060;
+      --text-primary:  #e8e0d0;
+      --text-muted:    #7a7060;
+      --border:        rgba(201,168,76,.25);
+      --border-subtle: rgba(255,255,255,.07);
+      --success-color: #6dde9a;
+      --error-color:   #ff8080;
+      --shadow:        rgba(0,0,0,.6);
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html { background: var(--bg-primary); color-scheme: dark; scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'YuMincho', Georgia, serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
+    }
+
+    /* ===== Header ===== */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: calc(env(safe-area-inset-top) + 14px) 20px 14px;
+      background: linear-gradient(160deg, #12121c 0%, #0c0c14 100%);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .header-eyebrow {
+      font-size: 9px;
+      letter-spacing: .35em;
+      color: var(--accent);
+      text-transform: uppercase;
+      opacity: .7;
+      margin-bottom: 3px;
+    }
+    .app-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: .06em;
+      line-height: 1.2;
+    }
+    .app-header p {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      letter-spacing: .12em;
+    }
+
+    /* ===== Main layout ===== */
+    .main-content {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 22px 15px calc(env(safe-area-inset-bottom) + 48px);
+    }
+
+    /* ===== Section ===== */
+    .section { margin-bottom: 22px; }
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 11px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 11px;
+      background: var(--accent);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ===== Category grid ===== */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+    .cat-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 13px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 13px 11px;
+      min-height: 54px;
+      text-align: left;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s, transform .1s;
+      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .cat-btn:active { transform: scale(.965); }
+    .cat-btn.is-selected {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .cat-btn .cat-num {
+      font-size: 10px;
+      color: var(--text-muted);
+      min-width: 14px;
+      flex-shrink: 0;
+    }
+    .cat-btn.is-selected .cat-num { color: rgba(201,168,76,.6); }
+
+    /* random button — full width, dashed border */
+    .cat-btn.cat-random {
+      grid-column: 1 / -1;
+      border-style: dashed;
+      border-color: rgba(201,168,76,.35);
+      background: rgba(201,168,76,.04);
+      justify-content: center;
+      text-align: center;
+      color: var(--accent);
+      font-size: 14px;
+      letter-spacing: .03em;
+    }
+    .cat-btn.cat-random.is-selected {
+      background: rgba(201,168,76,.12);
+      border-color: var(--accent);
+    }
+
+    /* ===== Memo section ===== */
+    #memo-section { transition: opacity .25s; }
+    #memo-section.is-hidden { display: none; }
+
+    #memo {
+      width: 100%;
+      min-height: 96px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 13px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.65;
+      padding: 13px 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-overflow-scrolling: touch;
+    }
+    #memo:focus { border-color: rgba(201,168,76,.5); }
+    #memo::placeholder { color: var(--text-muted); opacity: .65; }
+
+    .char-counter {
+      margin-top: 5px;
+      text-align: right;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      transition: color .2s;
+    }
+    .char-counter.warn { color: var(--error-color); }
+
+    /* ===== Ornament ===== */
+    .ornament {
+      text-align: center;
+      color: var(--accent);
+      opacity: .25;
+      letter-spacing: 10px;
+      font-size: 12px;
+      margin: 6px 0 18px;
+    }
+
+    /* ===== Generate button ===== */
+    .btn-generate {
+      width: 100%;
+      background: linear-gradient(135deg, #c9a84c 0%, #9e7c2c 100%);
+      border: none;
+      border-radius: 14px;
+      color: #0d0d10;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 18px;
+      min-height: 56px;
+      cursor: pointer;
+      letter-spacing: .06em;
+      transition: opacity .15s, transform .12s, box-shadow .15s;
+      box-shadow: 0 4px 22px rgba(201,168,76,.28);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .btn-generate:active {
+      transform: scale(.97);
+      box-shadow: 0 2px 10px rgba(201,168,76,.18);
+    }
+
+    /* ===== Output area ===== */
+    #output-area { margin-top: 26px; }
+
+    .welcome-msg {
+      text-align: center;
+      padding: 44px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 2;
+    }
+    .welcome-icon { font-size: 38px; margin-bottom: 14px; opacity: .45; }
+
+    /* Card animation */
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .output-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 28px var(--shadow);
+      animation: cardIn .35s ease both;
+    }
+    .output-card:nth-child(2) { animation-delay: .1s; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 15px;
+      background: rgba(201,168,76,.08);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .card-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: .05em;
+    }
+
+    .card-body {
+      display: flex;
+      align-items: stretch;
+    }
+
+    /* Left copy button */
+    .btn-copy {
+      width: 52px;
+      min-width: 52px;
+      background: rgba(201,168,76,.05);
+      border: none;
+      border-right: 1px solid var(--border-subtle);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      transition: background .15s;
+      -webkit-user-select: none;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .btn-copy:active { background: rgba(201,168,76,.15); }
+    .btn-copy.is-copied { background: rgba(109,222,154,.08); }
+
+    /* "Open Claude.ai" button — shown after copy */
+    .btn-open-claude {
+      display: none;
+      width: 100%;
+      background: linear-gradient(135deg, #c9a84c 0%, #9e7c2c 100%);
+      border: none;
+      border-top: 1px solid var(--border);
+      color: #0d0d10;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 13px;
+      cursor: pointer;
+      letter-spacing: .05em;
+      transition: opacity .15s, transform .1s;
+      -webkit-user-select: none;
+      user-select: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-open-claude.is-visible {
+      display: flex;
+    }
+    .btn-open-claude:active { opacity: .8; transform: scale(.98); }
+
+    .prompt-text {
+      flex: 1;
+      padding: 15px 15px 15px 13px;
+      font-size: 12.5px;
+      line-height: 1.85;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    /* ===== Toast ===== */
+    #toast {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom) + 28px);
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: rgba(22,22,32,.96);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 11px 22px;
+      border-radius: 40px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity .25s ease, transform .25s ease;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 8px 36px rgba(0,0,0,.55);
+    }
+    #toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.is-success { border-color: rgba(109,222,154,.4); color: var(--success-color); }
+    #toast.is-error   { border-color: rgba(255,128,128,.4); color: var(--error-color); }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-eyebrow">OT × X Generator</div>
+  <h1>ぼっちOT</h1>
+  <p>X投稿プロンプトジェネレーター</p>
+</header>
+
+<main class="main-content">
+
+  <!-- ① Category -->
+  <section class="section" id="section-category">
+    <div class="section-label">カテゴリを選択</div>
+    <div class="category-grid" id="category-grid">
+      <button class="cat-btn" data-cat="OTあるある">
+        <span class="cat-num">①</span>OTあるある
+      </button>
+      <button class="cat-btn" data-cat="臨床での気づき">
+        <span class="cat-num">②</span>臨床での気づき
+      </button>
+      <button class="cat-btn" data-cat="実験・研究の試行錯誤">
+        <span class="cat-num">③</span>実験・研究の試行錯誤
+      </button>
+      <button class="cat-btn" data-cat="論文アウトプット">
+        <span class="cat-num">④</span>論文アウトプット
+      </button>
+      <button class="cat-btn" data-cat="OT視点のライフハック">
+        <span class="cat-num">⑤</span>OT視点のライフハック
+      </button>
+      <button class="cat-btn" data-cat="OT哲学×自己啓発">
+        <span class="cat-num">⑥</span>OT哲学×自己啓発
+      </button>
+      <button class="cat-btn cat-random" data-cat="__random__">
+        🎲 今日は思いつかない
+      </button>
+    </div>
+  </section>
+
+  <!-- ② Memo -->
+  <section class="section" id="memo-section">
+    <div class="section-label">アイデアメモ</div>
+    <textarea id="memo" rows="4" placeholder="アイデアのメモをここに..."></textarea>
+    <div class="char-counter" id="char-counter">0文字</div>
+  </section>
+
+  <!-- ③ Generate -->
+  <section class="section">
+    <div class="ornament">✦ ✦ ✦</div>
+    <button class="btn-generate" id="btn-generate">プロンプトを生成する</button>
+  </section>
+
+  <!-- ④ Output -->
+  <div id="output-area">
+    <div class="welcome-msg" id="welcome-msg">
+      <div class="welcome-icon">✍️</div>
+      カテゴリを選んでメモを入力し<br>プロンプトを生成しましょう
+    </div>
+  </div>
+
+</main>
+
+<div id="toast" role="alert" aria-live="polite"></div>
+
+<script>
+/* =====================================================
+   PWA Setup — manifest + apple-touch-icon + SW
+   ===================================================== */
+(function initPWA() {
+
+  /* Canvas icon generator */
+  function makeIconPng(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const r = size * .18;
+
+    function rrect(x, y, w, h, rad) {
+      ctx.beginPath();
+      ctx.moveTo(x + rad, y);
+      ctx.lineTo(x + w - rad, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+      ctx.lineTo(x + w, y + h - rad);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+      ctx.lineTo(x + rad, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+      ctx.lineTo(x, y + rad);
+      ctx.quadraticCurveTo(x, y, x + rad, y);
+      ctx.closePath();
+    }
+
+    /* bg */
+    ctx.fillStyle = '#0f0f14';
+    ctx.fillRect(0, 0, size, size);
+
+    /* card */
+    rrect(size*.06, size*.06, size*.88, size*.88, r);
+    ctx.fillStyle = '#1a1a24';
+    ctx.fill();
+
+    /* gold border */
+    rrect(size*.06, size*.06, size*.88, size*.88, r);
+    ctx.strokeStyle = '#c9a84c';
+    ctx.lineWidth = size * .022;
+    ctx.stroke();
+
+    /* "OT" */
+    ctx.fillStyle = '#c9a84c';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `700 ${size * .4}px Georgia, serif`;
+    ctx.fillText('OT', size * .5, size * .57);
+
+    /* subtitle */
+    ctx.fillStyle = 'rgba(201,168,76,.45)';
+    ctx.font = `${size * .095}px Georgia, serif`;
+    ctx.fillText('Generator', size * .5, size * .76);
+
+    return c.toDataURL('image/png');
+  }
+
+  /* apple-touch-icon */
+  const icon180 = makeIconPng(180);
+  const ati = document.createElement('link');
+  ati.rel = 'apple-touch-icon';
+  ati.href = icon180;
+  document.head.appendChild(ati);
+
+  /* Web App Manifest via Blob */
+  const manifest = {
+    name: 'ぼっちOT X投稿ジェネレーター',
+    short_name: 'OT投稿',
+    description: 'OT向けX投稿プロンプト自動生成アプリ',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#0f0f14',
+    theme_color: '#c9a84c',
+    icons: [
+      { src: makeIconPng(192), sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: makeIconPng(512), sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const mLink = document.createElement('link');
+  mLink.rel = 'manifest';
+  mLink.href = URL.createObjectURL(mBlob);
+  document.head.appendChild(mLink);
+
+  /* Service Worker via Blob (best-effort for single-file PWA) */
+  if ('serviceWorker' in navigator) {
+    const swSrc = `
+const CACHE = 'ot-gen-v1';
+const URLS  = [self.location.href];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([])));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.open(CACHE).then(async cache => {
+      const cached = await cache.match(e.request);
+      if (cached) return cached;
+      try {
+        const res = await fetch(e.request);
+        if (res.ok) cache.put(e.request, res.clone());
+        return res;
+      } catch {
+        return cached || new Response('Offline', { status: 503 });
+      }
+    })
+  );
+});
+    `;
+    const swBlob = new Blob([swSrc], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+      .catch(() => {/* scope limitation in blob: SW — non-critical */});
+  }
+})();
+
+/* =====================================================
+   App State
+   ===================================================== */
+let selectedCat = null;
+
+/* =====================================================
+   DOM refs
+   ===================================================== */
+const catGrid    = document.getElementById('category-grid');
+const memoSec    = document.getElementById('memo-section');
+const memoEl     = document.getElementById('memo');
+const charCnt    = document.getElementById('char-counter');
+const btnGen     = document.getElementById('btn-generate');
+const outputArea = document.getElementById('output-area');
+const welcomeMsg = document.getElementById('welcome-msg');
+const toastEl    = document.getElementById('toast');
+
+/* =====================================================
+   Toast
+   ===================================================== */
+let toastTimer = null;
+function showToast(msg, type = '') {
+  if (toastTimer) clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.className = 'is-visible' + (type ? ` is-${type}` : '');
+  toastTimer = setTimeout(() => { toastEl.className = ''; }, 2600);
+}
+
+/* =====================================================
+   Category buttons
+   ===================================================== */
+catGrid.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    catGrid.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('is-selected'));
+    btn.classList.add('is-selected');
+    selectedCat = btn.dataset.cat;
+    memoSec.classList.toggle('is-hidden', selectedCat === '__random__');
+  });
+});
+
+/* =====================================================
+   Memo char counter
+   ===================================================== */
+memoEl.addEventListener('input', () => {
+  const n = memoEl.value.length;
+  charCnt.textContent = `${n}文字`;
+  charCnt.classList.toggle('warn', n > 140);
+});
+
+/* =====================================================
+   Prompt templates
+   ===================================================== */
+const TARGET = `【ターゲット読者】
+- メイン：2〜8年目の若手OT（OTらしさがわからなくなってきた・学会発表などの実績を作りたいけど作れない・「自分はちゃんとOTできてるのか？」という迷いを抱えている）
+- サブ：経験は積んだが同じ悩みを持つベテランOT`;
+
+const TONE_NOTE = `儒烏風亭らでん風のトーン（知識をひけらかしながら愛嬌がある・やや大仰な言い回し・オタク的な熱量・「〜なんですよ！」「〜じゃないですか」「わかる〜！」「エモい」などの口語表現）`;
+
+function tplNormal(cat, memo) {
+  return `あなたはOT（作業療法士）9年目のぼっちOTです。
+以下の条件でX（Twitter）の投稿文を1つ作成してください。
+
+【カテゴリ】${cat}
+【メモ・アイデア】${memo}
+
+${TARGET}
+
+【投稿のゴール】
+読んだ人がOTの哲学・理論に再度触れ「OTってやっぱり面白い」「自分にもできるかも」と思えるきっかけを作る。ぼっちOTへの憧れと信頼を育てる。
+
+【出力条件】
+- 140文字以内（厳守）
+- ${TONE_NOTE}
+- インプレッションを500以上狙える内容（若手OTが「これ自分のことだ」と感じる共感フック、またはOT哲学の意外な切り口）
+- 専門知識を身近に感じさせる言い回し
+- ハッシュタグは #作業療法 #OT を末尾に付ける
+- 投稿文のみ出力（説明不要）`;
+}
+
+function tplRandom1() {
+  return `あなたはOT（作業療法士）9年目のぼっちOTです。
+今日のOTあるあるネタを1つ考えて、X投稿文を作成してください。
+
+${TARGET}
+
+【投稿のゴール】
+「これ自分だ！」という強い共感を生み、ぼっちOTのアカウントへの親近感と信頼を育てる。
+
+【出力条件】
+- 140文字以内（厳守）
+- ${TONE_NOTE}
+- 現役OTが思わず「あるある！」と反応するリアルなネタ（職場の孤独感・担当患者への葛藤・OTの価値をうまく説明できないもどかしさ など）
+- インプレッションを500以上狙える内容
+- ハッシュタグは #作業療法 #OTあるある を末尾に付ける
+- 投稿文のみ出力（説明不要）`;
+}
+
+function tplRandom2() {
+  return `あなたはOT（作業療法士）9年目のぼっちOTです。
+OTの哲学・理論（MOHO、作業的存在、作業バランス、時間的適応、作業的公正、COPM、PEOモデルなど）を使って、
+日常の自己啓発・ライフハック的なテーマを読み解くX投稿文を1つ作成してください。
+
+${TARGET}
+
+【投稿のゴール】
+「OTの理論ってこんな使い方もできるのか！」という発見を提供し、OT哲学への興味を再燃させる。実績作りや自己研鑽のきっかけを与える。
+
+【出力条件】
+- 140文字以内（厳守）
+- ${TONE_NOTE}
+- OT専門知識を「若手OTの日常の悩みや成長欲求」に直結させた言葉で表現する
+- インプレッションを500以上狙える内容（意外性のある切り口 or 深く刺さる共感）
+- ハッシュタグは #作業療法 #OT哲学 を末尾に付ける
+- 投稿文のみ出力（説明不要）`;
+}
+
+/* =====================================================
+   Card builder
+   ===================================================== */
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function buildCard(label, promptText, delay = 0) {
+  const card = document.createElement('div');
+  card.className = 'output-card';
+  card.style.animationDelay = delay + 's';
+
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-tag">${escHtml(label)}</span>
+      <span class="card-hint">Claude.ai にコピペ ↗</span>
+    </div>
+    <div class="card-body">
+      <button class="btn-copy" aria-label="コピー" title="クリップボードにコピー">📋</button>
+      <div class="prompt-text">${escHtml(promptText)}</div>
+    </div>
+    <a class="btn-open-claude" href="https://claude.ai" target="_blank" rel="noopener noreferrer">
+      ✨ Claude.ai で開く
+    </a>`;
+
+  const copyBtn = card.querySelector('.btn-copy');
+  const openBtn = card.querySelector('.btn-open-claude');
+  copyBtn.addEventListener('click', () => {
+    const doCopy = () => {
+      copyBtn.textContent = '✅';
+      copyBtn.classList.add('is-copied');
+      openBtn.classList.add('is-visible');
+      showToast('コピーしました！', 'success');
+      setTimeout(() => {
+        copyBtn.textContent = '📋';
+        copyBtn.classList.remove('is-copied');
+      }, 2000);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(promptText).then(doCopy).catch(() => legacyCopy(promptText, doCopy));
+    } else {
+      legacyCopy(promptText, doCopy);
+    }
+  });
+
+  return card;
+}
+
+function legacyCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); cb(); } catch(e) { showToast('コピーに失敗しました', 'error'); }
+  document.body.removeChild(ta);
+}
+
+/* =====================================================
+   Generate
+   ===================================================== */
+btnGen.addEventListener('click', () => {
+  /* Validation */
+  if (!selectedCat) {
+    showToast('カテゴリを選んでください', 'error');
+    document.getElementById('section-category').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (selectedCat !== '__random__' && !memoEl.value.trim()) {
+    showToast('メモを入力してください', 'error');
+    memoEl.focus();
+    return;
+  }
+
+  /* Clear output */
+  outputArea.innerHTML = '';
+
+  /* Build output label */
+  const labelEl = document.createElement('div');
+  labelEl.className = 'section-label';
+  labelEl.style.marginBottom = '14px';
+  labelEl.textContent = '生成されたプロンプト';
+  outputArea.appendChild(labelEl);
+
+  if (selectedCat === '__random__') {
+    outputArea.appendChild(buildCard('① OTあるある',     tplRandom1(), 0));
+    outputArea.appendChild(buildCard('② OT哲学×自己啓発', tplRandom2(), 0.1));
+  } else {
+    outputArea.appendChild(buildCard(selectedCat, tplNormal(selectedCat, memoEl.value.trim()), 0));
+  }
+
+  /* Scroll */
+  setTimeout(() => {
+    outputArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+
+  showToast('プロンプトを生成しました', 'success');
+});
+</script>
+</body>
+</html>
